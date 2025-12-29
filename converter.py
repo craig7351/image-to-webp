@@ -14,6 +14,8 @@ class WebPConverterApp:
         # Variables
         self.input_dir = tk.StringVar()
         self.output_dir = tk.StringVar()
+        self.quality = tk.IntVar(value=80)
+        self.lossless = tk.BooleanVar(value=False)
 
         # UI Setup
         self.create_widgets()
@@ -32,6 +34,14 @@ class WebPConverterApp:
 
         tk.Entry(output_frame, textvariable=self.output_dir).pack(side="left", fill="x", expand=True, padx=(0, 5))
         tk.Button(output_frame, text="瀏覽...", command=self.browse_output).pack(side="right")
+
+        # Settings
+        settings_frame = tk.LabelFrame(self.root, text="設定 (Settings)", padx=10, pady=10)
+        settings_frame.pack(fill="x", padx=10, pady=5)
+
+        tk.Label(settings_frame, text="品質 (Quality):").pack(side="left")
+        tk.Scale(settings_frame, from_=1, to=100, orient="horizontal", variable=self.quality).pack(side="left", fill="x", expand=True, padx=5)
+        tk.Checkbutton(settings_frame, text="無損壓縮 (Lossless)", variable=self.lossless).pack(side="left", padx=10)
 
         # Action Buttons
         btn_frame = tk.Frame(self.root, pady=10)
@@ -71,11 +81,12 @@ class WebPConverterApp:
             return
 
         # Disable button? No simple way here without ref propert, but okay for simple app
-        threading.Thread(target=self.convert_images, args=(input_path, output_path), daemon=True).start()
+        threading.Thread(target=self.convert_images, args=(input_path, output_path, self.quality.get(), self.lossless.get()), daemon=True).start()
 
-    def convert_images(self, input_dir_str, output_dir_str):
+    def convert_images(self, input_dir_str, output_dir_str, quality, lossless):
         self.log("-" * 30)
         self.log(f"開始轉換: {input_dir_str} -> {output_dir_str}")
+        self.log(f"設定: 品質={quality}, 無損={lossless}")
         
         input_path = Path(input_dir_str)
         output_path = Path(output_dir_str)
@@ -105,7 +116,7 @@ class WebPConverterApp:
                 original_size = os.path.getsize(file_path)
                 
                 output_file = output_path / (file_path.stem + ".webp")
-                img.save(output_file, "webp")
+                img.save(output_file, "webp", quality=quality, lossless=lossless)
                 
                 new_size = os.path.getsize(output_file)
                 if original_size > 0:
